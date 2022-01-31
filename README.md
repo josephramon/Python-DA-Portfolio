@@ -1,2 +1,2 @@
 # Python-DA-Portfolio
-Some Python Data Analysis Projects
+Some of my Python Data Analysis Projects
