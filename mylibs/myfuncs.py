@@ -274,7 +274,7 @@ from sklearn.feature_selection import mutual_info_regression
 def make_mi_scores(X, y):
     print()
     print("Please wait, Mutual Information gathering can take time ...")
-    X = X.copy()
+    #X = X.copy()
     #for colname in X.select_dtypes(["object", "category"]):
     #    X[colname], _ = X[colname].factorize()
     # All discrete features should now have integer dtypes
@@ -295,20 +295,20 @@ def plot_mi_scores(scores):
     plt.title("Mutual Information Scores")
     
 from IPython.display import clear_output   # to be able to use clear_output(wait=True)   
-def GetSweetVizReport(df, savepath,kaggle_flag):
+def GetSweetVizReport(df, htmlpath, kaggle_flag):
     print(f'{color.bold}Please wait, preparing SweetViz report{color.end}')
     try:
         my_report = sv.analyze(df)
     
-        my_report.show_html(filepath=f'{savepath}SBA_sweetviz_report.html', 
+        my_report.show_html(filepath=f'{htmlpath}', 
                 open_browser=True, 
                 layout='vertical', 
                 scale=None)
         clear_output(wait=True)
         if kaggle_flag == 0:
-            print(f'SweetViz Report has been downloaded to kaggle working directory {savepath}')
+            print(f'SweetViz Report has been downloaded to kaggle working directory {htmlpath}')
         else:
-            print(f'SweetViz Report has been downloaded to savepath {savepath}')
+            print(f'SweetViz Report has been downloaded to {htmlpath}')
     except Exception as e:
         print(f'Error: {e}')
 
