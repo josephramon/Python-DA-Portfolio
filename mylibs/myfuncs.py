@@ -311,4 +311,30 @@ def GetSweetVizReport(df, htmlpath, kaggle_flag):
             print(f'SweetViz Report has been downloaded to {htmlpath}')
     except Exception as e:
         print(f'Error: {e}')
+        
+
+import pyttsx3        
+''' 
+Set up voice object.  Used in different areas of notebook to indicate completion of long processes.
+'''
+def SetVoice(kaggle_flag):
+    if kaggle_flag == 0:   # not Kaggle
+        engine = pyttsx3.init()  # object creation
+
+        """ RATE"""
+        #rate = engine.getProperty('rate')   # getting details of current speaking rate
+        #print (rate)                        #printing current voice rate
+        engine.setProperty('rate', 175)     # setting up new voice rate
+
+        """VOLUME"""
+        #volume = engine.getProperty('volume')   #getting to know current volume level (min=0 and max=1)
+        #print (volume)                         #printing current volume level
+        engine.setProperty('volume',0.7)        # setting up volume level  between 0 and 1
+
+        """VOICE"""
+        voices = engine.getProperty('voices')       #getting details of current voice
+        #engine.setProperty('voice', voices[0].id)  #changing index, changes voices. o for male
+        engine.setProperty('voice', voices[1].id)   #changing index, changes voices. 1 for female
+        
+        return engine
 
