@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import psutil
+import shutil
 import datetime as dt
 import pandas as pd
 import sweetviz as sv
@@ -10,6 +11,9 @@ from IPython.display import Audio, display
 from IPython.display import FileLink
 from IPython.display import IFrame
 from IPython.core.display import HTML
+
+import tensorflow as tf
+from tensorflow import keras
 
 # check if Kaggle GPU is enabled or not
 from tensorflow.python.client import device_lib
@@ -337,4 +341,68 @@ def SetVoice(kaggle_flag):
         engine.setProperty('voice', voices[1].id)   #changing index, changes voices. 1 for female
         
         return engine
+        
+        
+def InitTPUStrategy():
+    print("Tensorflow version " + tf.__version__)
+
+    # Detect and init the TPU
+    try:
+        # detect and init the TPU
+        # TPUs are network-connected accelerators and you must first locate them on the network. 
+        # This is what TPUClusterResolver.connect() does.  No parameters necessary if TPU_NAME
+        # environment variable is set: this is always the case on Kaggle.
+        tpu = tf.distribute.cluster_resolver.TPUClusterResolver.connect()
+        print('Running on TPU ', tpu.master())
+        # instantiate a distribution strategy
+        # This object contains the necessary distributed training code that will work on TPUs 
+        # with their 8 compute cores 
+        tf.config.experimental_connect_to_cluster(tpu)
+        tf.tpu.experimental.initialize_tpu_system(tpu)
+        tpu_strategy = tf.distribute.TPUStrategy(tpu)
+        tf.config.optimizer.set_jit(True)
+        #tpu_strategy = tf.distribute.experimental.TPUStrategy(tpu)
+
+    except ValueError: # detect GPUs
+        # default strategy that works on CPU and single GPU
+        tpu_strategy = tf.distribute.get_strategy() 
+
+    print("Number of accelerators: ", tpu_strategy.num_replicas_in_sync)
+
+    '''With a TPUStrategy running on a single TPU v3-8, the core count is 8. This is the hardware 
+    available on Kaggle. It could be more on larger configurations called TPU pods available on 
+    Google Cloud.'''
+
+    return tpu_strategy
+    
+    
+def ZipDir(zippath):
+    # Zip model directory.  Only doing this to be able to easily download from Kaggle 
+    # working dir.
+    #Give name of your final zipped file. .zip extension will be added automatically.
+    output_file = zippath
+
+    # Give the name of directory which you want to zip.
+    # If you are in same location as the directory you can simply give it's name or
+    # else give full path of directory.
+    # Check your current directory using this command
+    #print(os.getcwd())
+
+    #full path of directory to be zipped
+    zip_dir = zippath
+
+    #Create a zip archive
+    shutil.make_archive(output_file,'zip',zip_dir)
+    
+    '''
+    # To unzip
+    #zipped file full path
+    zipped_file = f'{workdir}ks_bc_model.zip'
+
+    #full path of directory to where the zipped files will be extracted
+    extracted_shutil_dir = f'{workdir}ks_bc_model_newdir'
+
+    #extract the files
+    shutil.unpack_archive(zipped_file,extracted_shutil_dir,'zip')
+    '''
 
