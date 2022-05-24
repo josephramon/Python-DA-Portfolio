@@ -8,8 +8,6 @@ import pandas as pd
 import sweetviz as sv
 import seaborn as sns
 from IPython.display import Audio, display
-from IPython.display import FileLink
-from IPython.display import IFrame
 from IPython.core.display import HTML
 
 import tensorflow as tf
