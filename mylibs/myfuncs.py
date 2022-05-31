@@ -7,6 +7,7 @@ import datetime as dt
 import pandas as pd
 import sweetviz as sv
 import seaborn as sns
+import pytz
 from IPython.display import Audio, display
 from IPython.core.display import HTML
 
@@ -403,4 +404,48 @@ def ZipDir(zippath):
     #extract the files
     shutil.unpack_archive(zipped_file,extracted_shutil_dir,'zip')
     '''
+    
+def GetTimeZone():
+    tz_flag = None
+    tzlist = list(pytz.all_timezones)
+    tzlist = list(map(lambda x: x, tzlist))
+    df = pd.DataFrame(tzlist, columns = ['timezone'])
+    print('Input your city or a city with same timezone as yours')
+    print('   e.g. Manila has same timezone as Singapore\n')
+    for i in range(5):
+        city = input('City (Enter without keying in anything will display all): ')
+    
+        if len(city) > 0:
+            if '+' in city:
+                index = city.find('+')
+                city = f'{city[:index]}\{city[index:]}'
+            #endif
+
+            filter=df['timezone'].str.contains(city, case=False)
+            if len(df[filter]) > 0:
+                display(df[filter])
+                print()
+                rownum =input\
+                    ('Row Number (Enter without keying in anything will ask for city again): ')
+                if len(rownum) > 0:
+                    tz_flag = df.iloc[int(rownum),0]
+                    print()
+                    print(f'{color.bold}Your choice: {color.bdblue}{tz_flag}{color.end}')
+
+                    # show local time to check that your tz_flag is correct
+                    IST = pytz.timezone(tz_flag)  
+                    local_time = dt.datetime.now(IST)  # get correct time as per local time zone
+                    print(f'\n{color.bold}Your Current Local Time : {color.bdgreen}{local_time.strftime("%I:%M:%S %p")}{color.end}')
+                    break
+                #endif
+            else:
+                print(f'\nAttempt {i+1}/{len(range(5))}: Not Found, try again')
+            #endif
+        else:
+            display(tzlist)
+            break
+        #endif
+    #endfor
+    
+    return tz_flag
 
