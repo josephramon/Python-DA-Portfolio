@@ -211,10 +211,11 @@ class color:
 
 # METRICS Function
 from sklearn import metrics
+from sklearn.metrics import f1_score
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-def model_eval(y_valid,predictions, cmDisplay='False'):
+def model_eval(y_valid,predictions, cmDisplay=False):
     print('MAE:', metrics.mean_absolute_error(y_valid, predictions))
     #print('MSE:', metrics.mean_squared_error(y_valid, predictions))
     print('RMSE:', np.sqrt(metrics.mean_squared_error(y_valid, predictions)))
@@ -264,11 +265,93 @@ def model_eval(y_valid,predictions, cmDisplay='False'):
     
     return {'cmv':cmv, 'ClassificationReport':ClassificationReport, 'AccuracyScore':asm}
 
+def model_eval2(model, X_train, y_train, X_testdata, y_testdata,
+                cmDisplay=False, prtstr = 'y_valid'):
+                
+    p_train = model.predict(X_train)
+    p_testdata = model.predict(X_testdata)
+    
+    rmse_testdata = np.sqrt(metrics.mean_squared_error(y_testdata, p_testdata))
+    f1_train = f1_score(y_train, p_train, average='micro') * 100
+    f1_testdata = f1_score(y_testdata, p_testdata, average='micro') * 100
+    
+    print()  
+    print('{}{} RMSE: {}{}{}{}'.format(
+            color.bold,
+            prtstr,
+            color.bdgreen,
+            color.underline,
+            rmse_testdata,
+            color.end)
+         )
+    print()
+    '''
+    #Uncomment if you want to show this
+    print("{}y_train f1 score: {}{}{}".format(
+           color.bold, color.bdblue,
+           f1_train,
+           color.end)
+         )
+    '''
+    print("{}{} f1 score: {}{}{}{}".format(
+           color.bold, 
+           prtstr,
+           color.bdgreen,
+           color.underline,
+           f1_testdata,
+           color.end)
+         )
+                 
+    print()
+    print('-'*30)
+    
+    print()
+    if cmDisplay == True:
+        cm = confusion_matrix(y_testdata, p_testdata)
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+        fig, ax = plt.subplots(dpi=100,figsize=(6,6))
+        disp.plot(ax=ax,colorbar=False,values_format='d')
+        if prtstr == 'y_valid':
+            disp.ax_.set_title("Confusion Matrix using Validation Data (y_valid)")
+        else:
+            disp.ax_.set_title("Confusion Matrix using Unseen Test Data (y_test)")        
+        
+    cmv = confusion_matrix(y_testdata, p_testdata)
+    
+    TrueNeg = cmv[0][0]
+    FalsePos = cmv[0][1]
+    FalseNeg = cmv[1][0]
+    TruePos = cmv[1][1]
+
+    TotalNeg = TrueNeg + FalseNeg
+    TotalPos = TruePos + FalsePos
+    
+    if prtstr == 'y_valid':
+        print(f'{color.bold}Confusion Matrix using Validation Data (y_valid){color.end}')
+    else:
+        print(f'{color.bold}Confusion Matrix using Unseen Test Data (y_test){color.end}')
+    
+    print()
+    print(f'True Negative : CHGOFF (0) was predicted {TrueNeg} times correctly \
+    ({round((TrueNeg/TotalNeg)*100,2)} %)')
+    print(f'False Negative : CHGOFF (0) was predicted {FalseNeg} times incorrectly \
+    ({round((FalseNeg/TotalNeg)*100,2)} %)')
+    print(f'True Positive : P I F (1) was predicted {TruePos} times correctly \
+    ({round((TruePos/TotalPos)*100,2)} %)')
+    print(f'False Positive : P I F (1) was predicted {FalsePos} times incorrectly \
+    ({round((FalsePos/TotalPos)*100,2)} %)')
+    
+    return {'cmv':cmv, 
+            'rmse_testdata':rmse_testdata,
+            'f1_score_train':f1_train,
+            'f1_score_testdata':f1_testdata}
 
 from xgboost import plot_importance
 # Plot xgboost feature importance
 def plot_features(booster, figsize):    
     fig, ax = plt.subplots(1,1,figsize=figsize,dpi=600)
+    plt.figure(dpi=300)
+    plt.style.use('Solarize_Light2')
     return plot_importance(booster=booster, ax=ax)
     
 
