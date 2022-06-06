@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import psutil
 import shutil
+import math
 import datetime as dt
 import pandas as pd
 import sweetviz as sv
@@ -211,8 +212,7 @@ class color:
 
 # METRICS Function
 from sklearn import metrics
-from sklearn.metrics import f1_score
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 def model_eval(y_valid,predictions, cmDisplay=False):
@@ -246,14 +246,18 @@ def model_eval(y_valid,predictions, cmDisplay=False):
     TotalPos = TruePos + FalsePos
     
     print()
-    print(f'True Negative : CHGOFF (0) was predicted {TrueNeg} times correctly \
-  ({round((TrueNeg/TotalNeg)*100,2)} %)')
-    print(f'False Negative : CHGOFF (0) was predicted {FalseNeg} times incorrectly \
-    ({round((FalseNeg/TotalNeg)*100,2)} %)')
-    print(f'True Positive : P I F (1) was predicted {TruePos} times correctly \
-    ({round((TruePos/TotalPos)*100,2)} %)')
-    print(f'False Positive : P I F (1) was predicted {FalsePos} times incorrectly \
-    ({round((FalsePos/TotalPos)*100,2)} %)')
+    print('True Negative  : CHGOFF (0) was predicted {} times correctly ({} %)'.format(
+        TrueNeg, round((TrueNeg/TotalNeg)*100,2)
+        ))
+    print('False Negative : CHGOFF (0) was predicted {} times incorrectly ({} %)'.format(
+        FalseNeg, round((FalseNeg/TotalNeg)*100,2)
+        ))
+    print('True Positive  : P I F (1) was predicted {} times correctly ({} %)'.format(
+        TruePos, round((TruePos/TotalPos)*100,2)
+        ))
+    print('False Positive : P I F (1) was predicted {} times incorrectly ({} %)'.format(
+        FalsePos, round((FalsePos/TotalPos)*100,2)
+    ))
     
     print()
     asm = (accuracy_score(y_valid, predictions.round()) * 100)
@@ -266,17 +270,23 @@ def model_eval(y_valid,predictions, cmDisplay=False):
     return {'cmv':cmv, 'ClassificationReport':ClassificationReport, 'AccuracyScore':asm}
 
 def model_eval2(model, X_train, y_train, X_testdata, y_testdata,
-                cmDisplay=False, prtstr = 'y_valid'):
+                cmDisplay = False, prtstr = 'y_valid', multi_label = False,
+                prt_acc = False):
                 
     p_train = model.predict(X_train)
     p_testdata = model.predict(X_testdata)
     
     rmse_testdata = np.sqrt(metrics.mean_squared_error(y_testdata, p_testdata))
-    f1_train = f1_score(y_train, p_train, average='micro') * 100
-    f1_testdata = f1_score(y_testdata, p_testdata, average='micro') * 100
     
-    print()  
-    print('{}{} RMSE: {}{}{}{}'.format(
+    if multi_label == True:
+        f1_train = f1_score(y_train, p_train, average='micro') * 100
+        f1_testdata = f1_score(y_testdata, p_testdata, average='micro') * 100
+    else:
+        f1_train = f1_score(y_train, p_train) * 100
+        f1_testdata = f1_score(y_testdata, p_testdata) * 100
+        
+    print() 
+    print('{}{} RMSE    : {}{}{}{}'.format(
             color.bold,
             prtstr,
             color.bdgreen,
@@ -293,7 +303,7 @@ def model_eval2(model, X_train, y_train, X_testdata, y_testdata,
            color.end)
          )
     '''
-    print("{}{} f1 score: {}{}{}{}".format(
+    print("{}{} f1 score: {}{}{} %{}".format(
            color.bold, 
            prtstr,
            color.bdgreen,
@@ -301,20 +311,25 @@ def model_eval2(model, X_train, y_train, X_testdata, y_testdata,
            f1_testdata,
            color.end)
          )
+
+    if prt_acc == True:
+        print()
+        asm = (accuracy_score(y_testdata, p_testdata.round()) * 100)
+        print(f'{color.bdgreen}Accuracy for model: %.2f{color.end}' % asm)
                  
     print()
-    print('-'*30)
-    
-    print()
-    if cmDisplay == True:
-        cm = confusion_matrix(y_testdata, p_testdata)
-        disp = ConfusionMatrixDisplay(confusion_matrix=cm)
-        fig, ax = plt.subplots(dpi=100,figsize=(6,6))
-        disp.plot(ax=ax,colorbar=False,values_format='d')
-        if prtstr == 'y_valid':
-            disp.ax_.set_title("Confusion Matrix using Validation Data (y_valid)")
-        else:
-            disp.ax_.set_title("Confusion Matrix using Unseen Test Data (y_test)")        
+    print('-'*50)   
+
+    clf_report = classification_report(y_testdata, p_testdata.round(),output_dict=True)
+    df_cr = pd.DataFrame(clf_report)
+    df_cr = df_cr.drop(['accuracy'], axis=1)
+    df_cr = df_cr.transpose()
+    print(f'\n{color.bold}Classification Report{color.end}')
+    display(df_cr)
+                                                 
+    #f1_score_0 = clf_report['0']['f1-score'] * 100
+    #f1_score_1 = clf_report['1']['f1-score'] * 100
+    accuracy   = clf_report['accuracy'] * 100    
         
     cmv = confusion_matrix(y_testdata, p_testdata)
     
@@ -326,31 +341,92 @@ def model_eval2(model, X_train, y_train, X_testdata, y_testdata,
     TotalNeg = TrueNeg + FalseNeg
     TotalPos = TruePos + FalsePos
     
+    print()
     if prtstr == 'y_valid':
         print(f'{color.bold}Confusion Matrix using Validation Data (y_valid){color.end}')
     else:
         print(f'{color.bold}Confusion Matrix using Unseen Test Data (y_test){color.end}')
     
     print()
-    print(f'True Negative : CHGOFF (0) was predicted {TrueNeg} times correctly \
-    ({round((TrueNeg/TotalNeg)*100,2)} %)')
-    print(f'False Negative : CHGOFF (0) was predicted {FalseNeg} times incorrectly \
-    ({round((FalseNeg/TotalNeg)*100,2)} %)')
-    print(f'True Positive : P I F (1) was predicted {TruePos} times correctly \
-    ({round((TruePos/TotalPos)*100,2)} %)')
-    print(f'False Positive : P I F (1) was predicted {FalsePos} times incorrectly \
-    ({round((FalsePos/TotalPos)*100,2)} %)')
+    print('True Negative  : CHGOFF (0) was predicted {} times correctly ({} %)'.format(
+        TrueNeg, round((TrueNeg/TotalNeg)*100,2)
+        ))
+    print('False Negative : CHGOFF (0) was predicted {} times incorrectly ({} %)'.format(
+        FalseNeg, round((FalseNeg/TotalNeg)*100,2)
+        ))
+    print('True Positive  : P I F (1) was predicted {} times correctly ({} %)'.format(
+        TruePos, round((TruePos/TotalPos)*100,2)
+        ))
+    print('False Positive : P I F (1) was predicted {} times incorrectly ({} %)'.format(
+        FalsePos, round((FalsePos/TotalPos)*100,2)
+    ))
     
-    return {'cmv':cmv, 
+    if multi_label == False:
+        precision = metrics.precision_score(y_testdata, p_testdata) * 100
+        recall_sensitivity = metrics.recall_score(y_testdata, p_testdata, pos_label=1) * 100
+        recall_specificity = metrics.recall_score(y_testdata, p_testdata, pos_label=0) * 100
+    else:
+        precision = metrics.precision_score(y_testdata, p_testdata, average='micro') * 100
+        recall_sensitivity = metrics.recall_score(y_testdata, p_testdata, pos_label=1) * 100
+        recall_specificity = metrics.recall_score(y_testdata, p_testdata, pos_label=0) * 100
+        
+    g_mean = math.sqrt(recall_sensitivity * recall_specificity)
+
+    data = {f'Metrics Summary: {prtstr} in %':[
+                               rmse_testdata,
+                               f1_testdata,
+                               #accuracy,
+                               precision,
+                               recall_sensitivity,
+                               recall_specificity,
+                               g_mean
+                              ]
+           }
+ 
+    # Creates pandas DataFrame.
+    df = pd.DataFrame(data,
+                      index =['rmse',
+                              'f1_score',
+                              #'Accuracy',
+                              'Precision',
+                              'Recall Sensitivity',
+                              'Recall Specificity',
+                              'G-Mean'
+                             ]
+                      )
+
+    display(df) 
+     
+    if cmDisplay == True:
+        plt.rcParams["axes.grid"] = False
+        plt.rcParams.update({'font.size': 4})
+        cm = confusion_matrix(y_testdata, p_testdata)
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+        fig, ax = plt.subplots(dpi=300,figsize=(1.5,1.5))
+        
+        disp.plot(ax=ax,colorbar=False, values_format='d')
+        disp.ax_.set_xlabel('Predicted', fontsize=4)
+        disp.ax_.set_ylabel('True', fontsize=4)
+        # Set tick font size
+        for label in (disp.ax_.get_xticklabels() + disp.ax_.get_yticklabels()):
+            label.set_fontsize(4)
+        disp.ax_.set_title(f"Confusion Matrix ({prtstr})", fontsize = 4)
+
+    return {'df':df,
+            'cmv':cmv, 
             'rmse_testdata':rmse_testdata,
             'f1_score_train':f1_train,
             'f1_score_testdata':f1_testdata}
 
 from xgboost import plot_importance
 # Plot xgboost feature importance
-def plot_features(booster, figsize):    
-    fig, ax = plt.subplots(1,1,figsize=figsize,dpi=600)
-    plt.figure(dpi=300)
+def plot_features(booster, figsize):  
+    plt.rcParams.update({'font.size': 8})
+    fig, ax = plt.subplots(1,1,figsize=figsize,dpi=300)
+    # Set tick font size
+    for label in (ax.get_xticklabels() + ax.get_yticklabels()):
+        label.set_fontsize(8)
+    #plt.figure(dpi=300)
     plt.style.use('Solarize_Light2')
     return plot_importance(booster=booster, ax=ax)
     
@@ -531,4 +607,10 @@ def GetTimeZone():
     #endfor
     
     return tz_flag
+    
+def GetRatio(num1, num2):
+    # get ratio between two numbers
 
+    # get greatest common denominator
+    div = math.gcd(num1, num2)
+    return f"{int(num1/div)}:{int(num2/div)}"
