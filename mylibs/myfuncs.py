@@ -422,13 +422,12 @@ from xgboost import plot_importance
 # Plot xgboost feature importance
 def plot_features(booster, figsize):  
     plt.rcParams.update({'font.size': 8})
+    plt.style.use('Solarize_Light2')
     fig, ax = plt.subplots(1,1,figsize=figsize,dpi=300)
     # Set tick font size
     for label in (ax.get_xticklabels() + ax.get_yticklabels()):
         label.set_fontsize(8)
-    #plt.figure(dpi=300)
-    plt.style.use('Solarize_Light2')
-    return plot_importance(booster=booster, ax=ax)
+    plot_importance(booster=booster, ax=ax)
     
 
 # MUTUAL INFORMATION
